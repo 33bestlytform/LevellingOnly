@@ -19,6 +19,14 @@ except:
 
 WEAPONS = ["手枪", "霰弹", "激光", "剑"]
 
+# 武器攻速设置
+WEAPON_ATK_SPEED = {
+    "手枪": 0.3,
+    "霰弹": 0.5,
+    "激光": 0.2,
+    "剑": 0.4
+}
+
 CHARACTERS = [
     {"name":"战士","hp":15,"speed":4,"damage":2,"atk_speed":0.3,"desc":"血厚攻高"},
     {"name":"射手","hp":8,"speed":6,"damage":1,"atk_speed":0.15,"desc":"攻速飞快"},
@@ -50,10 +58,12 @@ class Player:
         if k[pygame.K_s]: self.rect.y += self.speed
 
     def fire(self, enemies, bullets):
-        if not enemies:
+        if not enemies or self.upgrade_wait:
             return
         self.timer += clock.tick() / 1000
-        if self.timer < self.atk_speed:
+        # 使用武器特定的攻速
+        weapon_atk_speed = WEAPON_ATK_SPEED.get(self.weapon, self.atk_speed)
+        if self.timer < weapon_atk_speed:
             return
         self.timer = 0
 
@@ -198,88 +208,104 @@ def main():
 
         screen.fill((18, 18, 22))
 
+        # 事件处理
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
 
             if event.type == pygame.KEYDOWN:
-                # B 开关商店
-                if event.key == pygame.K_b:
-                    p.shop_open = not p.shop_open
-                    shop_notice = ""
+                # 升级选择优先：1/2/3选择升级项
+                if p.upgrade_wait:
+                    if event.key == pygame.K_1 and len(upgrades)>=1:
+                        upgrades[0][1](p)
+                        p.upgrade_wait = False
+                    if event.key == pygame.K_2 and len(upgrades)>=2:
+                        upgrades[1][1](p)
+                        p.upgrade_wait = False
+                    if event.key == pygame.K_3 and len(upgrades)>=3:
+                        upgrades[2][1](p)
+                        p.upgrade_wait = False
+                else:
+                    # B 开关商店
+                    if event.key == pygame.K_b:
+                        p.shop_open = not p.shop_open
+                        shop_notice = ""
 
-                # 商店关闭时：123切武器
-                if not p.shop_open:
-                    if event.key == pygame.K_1:
-                        p.weapon = WEAPONS[0]
-                    if event.key == pygame.K_2:
-                        p.weapon = WEAPONS[1]
-                    if event.key == pygame.K_3:
-                        p.weapon = WEAPONS[2]
-                    if event.key == pygame.K_4:
-                        p.weapon = WEAPONS[3]
+                    # 商店关闭时：1234切武器
+                    if not p.shop_open:
+                        if event.key == pygame.K_1:
+                            p.weapon = WEAPONS[0]
+                        if event.key == pygame.K_2:
+                            p.weapon = WEAPONS[1]
+                        if event.key == pygame.K_3:
+                            p.weapon = WEAPONS[2]
+                        if event.key == pygame.K_4:
+                            p.weapon = WEAPONS[3]
 
-                # 商店开启时：1234购买
-                if p.shop_open:
-                    idx = -1
-                    if event.key == pygame.K_1: idx = 0
-                    if event.key == pygame.K_2: idx = 1
-                    if event.key == pygame.K_3: idx = 2
-                    if event.key == pygame.K_4: idx = 3
-                    if 0 <= idx < len(shop_items):
-                        cost = shop_items[idx][1]
-                        if p.money >= cost:
-                            p.money -= cost
-                            shop_items[idx][2](p)
-                            shop_notice = "购买成功！"
-                            shop_notice_time = pygame.time.get_ticks()
-                        else:
-                            shop_notice = "金币不足！"
-                            shop_notice_time = pygame.time.get_ticks()
+                    # 商店开启时：1234购买
+                    if p.shop_open:
+                        idx = -1
+                        if event.key == pygame.K_1: idx = 0
+                        if event.key == pygame.K_2: idx = 1
+                        if event.key == pygame.K_3: idx = 2
+                        if event.key == pygame.K_4: idx = 3
+                        if 0 <= idx < len(shop_items):
+                            cost = shop_items[idx][1]
+                            if p.money >= cost:
+                                p.money -= cost
+                                shop_items[idx][2](p)
+                                shop_notice = "购买成功！"
+                                shop_notice_time = pygame.time.get_ticks()
+                            else:
+                                shop_notice = "金币不足！"
+                                shop_notice_time = pygame.time.get_ticks()
 
-        # 自动攻击
-        p.fire(enemies, bullets)
-        p.move()
+        # 升级状态下屏蔽移动/攻击，只保留升级选择
+        if not p.upgrade_wait:
+            p.fire(enemies, bullets)
+            p.move()
 
-        # 敌人移动
-        for e in enemies:
-            e.move_to(p)
-            if e.rect.colliderect(p.rect):
-                p.hp -= 1
-                if p.hp <= 0:
-                    game_over_screen("lose", wave, p.char_name)
-                    return
-
-        # 子弹移动
-        new_bullets = []
-        for b in bullets:
-            t, x, y, vx, vy, dmg = b
-            x += vx
-            y += vy
-            rect = pygame.Rect(x, y, 4, 4)
-            hit = False
+            # 敌人移动
             for e in enemies:
-                if rect.colliderect(e.rect):
-                    e.hp -= dmg
-                    hit = True
-                    break
-            if not hit and 0 < x < SW and 0 < y < SH:
-                new_bullets.append([t, x, y, vx, vy, dmg])
-        bullets = new_bullets
+                e.move_to(p)
+                if e.rect.colliderect(p.rect):
+                    p.hp -= 1
+                    if p.hp <= 0:
+                        game_over_screen("lose", wave, p.char_name)
+                        return
 
-        # 敌人死亡 & 掉钱
-        alive = []
-        for e in enemies:
-            if e.hp > 0:
-                alive.append(e)
-            else:
-                p.money += e.drop_money
-        enemies = alive
+            # 子弹移动
+            new_bullets = []
+            for b in bullets:
+                t, x, y, vx, vy, dmg = b
+                x += vx
+                y += vy
+                rect = pygame.Rect(x, y, 4, 4)
+                hit = False
+                for e in enemies:
+                    if rect.colliderect(e.rect):
+                        e.hp -= dmg
+                        hit = True
+                        break
+                if not hit and 0 < x < SW and 0 < y < SH:
+                    new_bullets.append([t, x, y, vx, vy, dmg])
+            bullets = new_bullets
 
-        # 下一波
-        if not enemies:
-            wave += 1
-            enemies = wave_spawn(6 + wave * 2)
+            # 敌人死亡 & 掉钱
+            alive = []
+            for e in enemies:
+                if e.hp > 0:
+                    alive.append(e)
+                else:
+                    p.money += e.drop_money
+            enemies = alive
+
+            # 下一波：清完敌人生成升级+新敌人
+            if not enemies:
+                wave += 1
+                upgrades = generate_upgrades()
+                p.upgrade_wait = True
+                enemies = wave_spawn(6 + wave * 2)
 
         # 绘制
         pygame.draw.rect(screen, (0,200,0), p.rect)
@@ -295,14 +321,21 @@ def main():
         draw_text("按 B 打开/关闭商店", 10, SH - 40)
 
         # 商店UI
-        if p.shop_open:
+        if p.shop_open and not p.upgrade_wait:
             pygame.draw.rect(screen, (20,20,40), (SW//2 - 220, 100, 440, 300))
             draw_text("商店（按1-4购买）", SW//2 - 100, 120)
             for i, (name, _, _) in enumerate(shop_items):
                 draw_text(f"{i+1}. {name}", SW//2 - 160, 180 + i * 40)
 
-        # 提示文字
-        if shop_notice and now - shop_notice_time < 2000:
+        # 升级界面（优先级最高，覆盖所有UI）
+        if p.upgrade_wait:
+            pygame.draw.rect(screen, (40,20,40), (SW//2 - 200, SH//2 - 100, 400, 200))
+            draw_big("选择升级！", SW//2 - 80, SH//2 - 80)
+            for i, (name, _) in enumerate(upgrades):
+                draw_text(f"{i+1}. {name}", SW//2 - 100, SH//2 + 20 + i*40, (255,200,100))
+
+        # 商店提示文字
+        if shop_notice and now - shop_notice_time < 2000 and not p.upgrade_wait:
             color = (0,255,0) if shop_notice == "购买成功！" else (255,60,60)
             draw_text(shop_notice, SW//2 - 80, SH//2, color)
 
@@ -310,4 +343,5 @@ def main():
         clock.tick(60)
 
 if __name__ == "__main__":
-    main()
+    while True:
+        main()
