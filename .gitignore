@@ -24,3 +24,6 @@ Thumbs.db
 .venv/
 env/
 venv/
+
+#source
+levelup.txt
