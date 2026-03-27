@@ -7,15 +7,8 @@ SW, SH = 1000, 700
 screen = pygame.display.set_mode((SW, SH))
 pygame.display.set_caption("我独自升级")
 clock = pygame.time.Clock()
-# 尝试使用多种中文字体作为备选
-try:
-    # 尝试使用 SimHei (黑体)
-    font = pygame.font.SysFont(["SimHei", "Microsoft YaHei", "Arial"], 32)
-    big_font = pygame.font.SysFont(["SimHei", "Microsoft YaHei", "Arial"], 48)
-except:
-    # 如果找不到中文字体，使用默认字体
-    font = pygame.font.SysFont(None, 32)
-    big_font = pygame.font.SysFont(None, 48)
+font = pygame.font.SysFont("WenQuanYi Zen Hei", 32)
+big_font = pygame.font.SysFont("WenQuanYi Zen Hei", 48)
 
 WEAPONS = ["手枪", "霰弹", "激光", "剑"]
 

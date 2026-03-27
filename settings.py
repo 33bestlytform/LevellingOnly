@@ -23,7 +23,7 @@ try:
     FONT = pygame.font.SysFont(["SimHei", "Microsoft YaHei", "Arial"], 32)
     BIG_FONT = pygame.font.SysFont(["SimHei", "Microsoft YaHei", "Arial"], 48)
 except:
-    # 使用默认字体
+    # 如果找不到中文字体，使用默认字体
     FONT = pygame.font.SysFont(None, 32)
     BIG_FONT = pygame.font.SysFont(None, 48)
 
