@@ -18,8 +18,14 @@ DARK_BLUE = (18, 18, 22)
 SHOP_BG = (20, 20, 30)
 
 # 字体设置
-FONT = pygame.font.SysFont(None, 32)
-BIG_FONT = pygame.font.SysFont(None, 48)
+try:
+    # 尝试使用支持中文的字体
+    FONT = pygame.font.SysFont(["SimHei", "Microsoft YaHei", "Arial"], 32)
+    BIG_FONT = pygame.font.SysFont(["SimHei", "Microsoft YaHei", "Arial"], 48)
+except:
+    # 使用默认字体
+    FONT = pygame.font.SysFont(None, 32)
+    BIG_FONT = pygame.font.SysFont(None, 48)
 
 # 游戏常量
 WEAPONS = ["手枪", "霰弹", "激光", "剑"]
