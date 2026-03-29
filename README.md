@@ -1,18 +1,73 @@
 # 我独自升级游戏
 
-一个基于 Pygame 开发的生存射击游戏，玩家需要选择角色，击败一波又一波的敌人，升级自己的能力，坚持10分钟获得胜利。
+## 游戏介绍
+这是一个生存射击游戏，玩家需要在不断涌来的敌人中生存下去，通过击败敌人获取金币解锁新武器和升级。
 
-## 功能特点
+## 安装与运行
 
-- 4个不同特性的角色选择，每个角色拥有独特的终极技能
-- 4种武器系统，支持武器升级和解锁
-- 等级提升和技能选择
-- 商店系统，物品价格随购买次数上涨
-- 波次挑战，每5波生成一个BOSS
-- 血包系统，怪物死亡时有概率掉落血包
-- 武器掉落系统，特殊敌人和BOSS会掉落武器
-- 终极技能系统，每个角色拥有独特的终极技能
-- BOSS系统，每5波生成一个强大的BOSS
+### 依赖
+- Python 3.7+
+- Pygame
+
+### 安装
+1. 克隆仓库
+2. 安装依赖：`pip install pygame`
+3. 运行游戏：`python main.py`
+
+### 快速启动
+我们提供了多种启动方式：
+- 直接运行：`python main.py`
+- Windows可执行文件：双击 `LevelingOnly.exe` (需要先打包)
+- 使用启动脚本：`launch_game.bat` (Windows) 或 `launch_game.sh` (Linux)
+
+## 打包为独立可执行文件
+
+### Windows
+1. 确保已安装Python和pip
+2. 安装PyInstaller：`pip install pyinstaller`
+3. 运行打包脚本：`python windows_setup_build.py`
+4. 可执行文件将生成在 `dist/LevelingOnly.exe`
+
+### Linux
+1. 确保已安装Python3和pip3
+2. 安装PyInstaller：`pip3 install pyinstaller`
+3. 运行打包脚本：`python3 linux_setup_build.py`
+4. 可执行文件将生成在 `dist/LevelingOnly`
+
+### 跨平台打包
+我们提供了一个通用打包脚本，可以自动检测操作系统：
+```bash
+python universal_build.py
+```
+
+## 故障排除
+
+### Windows常见问题
+参见 `BUILD_TROUBLESHOOTING.md` 文件
+
+### Linux常见问题
+参见 `LINUX_BUILDING.md` 文件
+
+## 游戏特性
+
+### 角色系统
+- 战士：高生命值，拥有AOE技能
+- 射手：高攻速，技能提升武器攻速
+- 忍者：高移速，技能提供短暂无敌
+- 机器人：技能提供护盾
+
+### 武器系统
+- 普通手枪：鼠标点击射击
+- 霰弹枪：自动攻击，散射伤害
+- 激光枪：自动攻击，穿透伤害
+- 圣剑：近战范围攻击
+
+### 敌人类型
+- 普通敌人：基础敌人
+- 弓箭手：远程攻击
+- 史莱姆：会分裂的敌人
+- 特殊敌人：带星号标识的强敌（5%概率出现）
+- BOSS：每5波出现一次，血量厚，攻击力高
 
 ## 控制方式
 
