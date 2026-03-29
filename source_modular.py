@@ -15,12 +15,14 @@ big_font = pygame.font.SysFont("Microsoft YaHei", 48)
 small_font = pygame.font.SysFont("Microsoft YaHei", 24)
 
 # 武器基础配置（用于重新开始时重置）
-BASE_WEAPON_CONFIG = {
+BASE_WEAPON_CONFIG_DEFAULT = {
     "普通手枪": {"base_dmg": 0, "upgrade": 1, "max_level": 10, "atk_speed": 0.25, "type": "click"},
     "霰弹枪": {"base_dmg": 1, "upgrade": 1, "max_level": 8, "atk_speed": 1.2, "type": "auto"},
     "激光枪": {"base_dmg": 2, "upgrade": 1, "max_level": 6, "atk_speed": 1.5, "type": "auto"},
     "圣剑": {"base_dmg": 3, "upgrade": 2, "max_level": 5, "atk_speed": 1.2, "type": "auto"}
 }
+import copy
+BASE_WEAPON_CONFIG = copy.deepcopy(BASE_WEAPON_CONFIG_DEFAULT)
 
 # 角色属性（新增终极技能配置）
 CHARACTERS = [
@@ -210,6 +212,8 @@ class Player:
             if self.ultimate["type"] == "aoe":
                 return f"发动{self.ultimate['name']}！"
             elif self.ultimate["type"] == "speedup":
+                # 记录当前攻速（包括升级后的）
+                self.original_atk_speeds = {wp: BASE_WEAPON_CONFIG[wp]["atk_speed"] for wp in BASE_WEAPON_CONFIG.keys()}
                 # 临时降低攻击间隔（攻速翻倍）
                 for wp in BASE_WEAPON_CONFIG.keys():
                     BASE_WEAPON_CONFIG[wp]["atk_speed"] *= self.ultimate["multiplier"]
@@ -271,7 +275,7 @@ class Player:
                         bullets.append(["sword", e.rect.centerx, e.rect.centery, 0, 0, 0, 15])
 
 class Enemy:
-    def __init__(self, monster_type, wave, is_special=False):
+    def __init__(self, monster_type, wave, is_special=False, slime_grade=None):
         self.type = monster_type
         self.is_special = is_special
         self.wave = wave
@@ -292,9 +296,9 @@ class Enemy:
             self.hp_grow = 0.8 * (wave - 1)
         else:
             self.hp_grow = 0.8 * 4 + (wave - 5) * 1.5
-        self._init_attrs(side, y)
+        self._init_attrs(side, y, slime_grade)
 
-    def _init_attrs(self, x, y):
+    def _init_attrs(self, x, y, slime_grade=None):
         if self.type == "normal":
             self.size = 28
             self.base_hp = 1 + self.hp_grow
@@ -310,7 +314,7 @@ class Enemy:
             self.drop_money = random.randint(2, 4) + self.wave // 5
             self.drop_weapon = None
         elif self.type == "slime":
-            self.slime_grade = "big"
+            self.slime_grade = slime_grade if slime_grade is not None else "big"
             slime_cfg = SLIME_SIZE[self.slime_grade]
             self.size = slime_cfg["size"]
             self.base_hp = slime_cfg["hp"] + self.hp_grow
@@ -392,47 +396,39 @@ class Enemy:
                 monster_bullets.append(["boss", tx, ty, c.x*9, c.y*9, 2])  # BOSS子弹伤害2点
         else:
             monster_bullets.append(["archer", tx, ty, dx*7, dy*7, 1])
-        # 原有方法保持不变
-        def split_slime(self):
-            slime_cfg = SLIME_SIZE[self.slime_grade]
-            if slime_cfg["split_to"] is None:
-                return []
-            new_slimes = []
-            for i in [-1, 1]:
-                offset_x = random.randint(20, 40) * i
-                offset_y = random.randint(20, 40) * i
-                new_slime = Enemy("slime", self.wave)
-                new_slime.slime_grade = slime_cfg["split_to"]
-                slime_new_cfg = SLIME_SIZE[new_slime.slime_grade]
-                new_slime.size = slime_new_cfg["size"]
-                new_slime.hp = max(1, int(slime_new_cfg["hp"] + self.hp_grow))
-                new_slime.speed = slime_new_cfg["speed"]
-                new_slime.rect = pygame.Rect(self.rect.x + offset_x, self.rect.y + offset_y, new_slime.size, new_slime.size)
-                new_slimes.append(new_slime)
-            return new_slimes
 
-# 重写wave_spawn，每5波生成BOSS
-def wave_spawn(n, wave):
-    enemies = []
-    # 每5波生成1个BOSS，减少小怪数量
-    if wave % 5 == 0:
-        enemies.append(Enemy("boss", wave))
-        n = n // 2  # BOSS战小怪数量减半
-    else:
-        enemies.append(Enemy("special", wave, is_special=True))
-    # 原有怪物占比逻辑不变
-    archer_rate = min(0.4, wave * 0.07)
-    slime_rate = min(0.35, wave * 0.08)
-    normal_rate = 1 - archer_rate - slime_rate
-    monster_pool = []
-    monster_pool += ["archer"] * int((n-1)*archer_rate)
-    monster_pool += ["slime"] * int((n-1)*slime_rate)
-    monster_pool += ["normal"] * ((n-1) - len(monster_pool))
-    random.shuffle(monster_pool)
-    for m_type in monster_pool:
-        enemies.append(Enemy(m_type, wave))
-    random.shuffle(enemies)
-    return enemies
+    def split_slime(self):
+        slime_cfg = SLIME_SIZE[self.slime_grade]
+        if slime_cfg["split_to"] is None:
+            return []
+        new_slimes = []
+        for i in [-1, 1]:
+            offset_x = random.randint(20, 40) * i
+            offset_y = random.randint(20, 40) * i
+            new_slime = Enemy("slime", self.wave, slime_grade=slime_cfg["split_to"])
+            # 边界检查，防止新史莱姆超出屏幕
+            nx = max(0, min(self.rect.x + offset_x, SW - new_slime.size))
+            ny = max(0, min(self.rect.y + offset_y, SH - new_slime.size))
+            new_slime.rect = pygame.Rect(nx, ny, new_slime.size, new_slime.size)
+            new_slimes.append(new_slime)
+        return new_slimes
+    
+    # 怪物生成函数应在类外部
+    def wave_spawn(n, wave):
+        enemies = []
+        # 原有怪物占比逻辑不变
+        archer_rate = min(0.4, wave * 0.07)
+        slime_rate = min(0.35, wave * 0.08)
+        normal_rate = 1 - archer_rate - slime_rate
+        monster_pool = []
+        monster_pool += ["archer"] * int((n-1)*archer_rate)
+        monster_pool += ["slime"] * int((n-1)*slime_rate)
+        monster_pool += ["normal"] * ((n-1) - len(monster_pool))
+        random.shuffle(monster_pool)
+        for m_type in monster_pool:
+            enemies.append(Enemy(m_type, wave))
+        random.shuffle(enemies)
+        return enemies
 
 # 原有工具函数保持不变
 def draw_text(s, x, y, color=(255,255,255)):
@@ -485,6 +481,12 @@ def draw_ultimate_ui(p):
     cd_color = (0,255,0) if cd_ratio <= 0 else (255,0,0)
     # 技能框背景
     pygame.draw.rect(screen, (50,50,50), (SW-120, SH-80, 100, 60))
+def draw_ultimate_ui(p):
+    cd = p.ultimate.get("cd", 0)
+    cd_ratio = p.ultimate_cd / cd if cd != 0 else 0
+    cd_color = (0,255,0) if cd_ratio <= 0 else (255,0,0)
+    # 技能框背景
+    pygame.draw.rect(screen, (50,50,50), (SW-120, SH-80, 100, 60))
     pygame.draw.rect(screen, cd_color, (SW-115, SH-75, 90, 50), 3)
     # CD文字或技能名称
     if p.ultimate_cd > 0:
@@ -494,11 +496,6 @@ def draw_ultimate_ui(p):
     # 机器人护盾剩余次数提示
     if p.shield_active:
         draw_small(f"护盾: {p.shield_hits}次", SW-200, SH-40, (0,255,255))
-
-# 新增：绘制血包（红色圆形，带十字标记）
-def draw_health_packs():
-    for hp in health_packs:
-        # 血包主体（红色圆形）
         pygame.draw.circle(screen, HEALTH_PACK_CONFIG["color"], (hp["x"], hp["y"]), HEALTH_PACK_CONFIG["size"]//2)
         # 十字标记（白色）
         x, y = hp["x"], hp["y"]
@@ -551,17 +548,11 @@ def game_over_screen(result, wave, char_name):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                # 重置攻速配置（关键：重新开始时恢复基础攻速）
                 for wp in BASE_WEAPON_CONFIG.keys():
-                    BASE_WEAPON_CONFIG[wp]["atk_speed"] = {
-                        "普通手枪": 0.25,
-                        "霰弹枪": 1.2,
-                        "激光枪": 1.5,
-                        "圣剑": 1.2
-                    }[wp]
+                    BASE_WEAPON_CONFIG[wp]["atk_speed"] = BASE_WEAPON_CONFIG_DEFAULT[wp]["atk_speed"]
                 pygame.time.delay(200)
+                return
+                return
                 return
         pygame.display.flip()
         clock.tick(60)
@@ -572,17 +563,11 @@ def main():
         # 每次重新开始前重置全局状态
         health_packs = []
         mouse_clicked = False
-        weapon_drop_rect = None
-        dropped_weapon = None
-        # 重置攻速配置（关键：避免重复叠加）
         for wp in BASE_WEAPON_CONFIG.keys():
-            BASE_WEAPON_CONFIG[wp]["atk_speed"] = {
-                "普通手枪": 0.25,
-                "霰弹枪": 1.2,
-                "激光枪": 1.5,
-                "圣剑": 1.2
-            }[wp]
-        
+            BASE_WEAPON_CONFIG[wp]["atk_speed"] = BASE_WEAPON_CONFIG_DEFAULT[wp]["atk_speed"]
+
+        char = character_select()
+        p = Player(char)
         char = character_select()
         p = Player(char)
         bullets = []
