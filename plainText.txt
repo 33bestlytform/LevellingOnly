@@ -1,0 +1,18 @@
+LevellingOnly/
+├── main.py
+├── config/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── weapons.py
+│   ├── enemies.py
+│   └── characters.py
+├── src/
+│   ├── __init__.py
+│   ├── game.py
+│   ├── player.py
+│   ├── enemy.py
+│   └── ui.py
+├── utils/
+│   ├── __init__.py
+│   └── logger.py
+└── requirements.txt
