@@ -22,7 +22,7 @@ BASE_WEAPON_CONFIG = {
     "圣剑": {"base_dmg": 3, "upgrade": 2, "max_level": 5, "atk_speed": 1.2, "type": "auto"}
 }
 
-# 角色属性（新增终极技能配置，不改动原有属性）
+# 角色属性（新增终极技能配置）
 CHARACTERS = [
     {"name":"战士","hp":15,"speed":4,"damage":2,"desc":"血厚攻高",
      "ultimate": {"name": "烈焰光圈", "type": "aoe", "cd": 20, "duration": 1.5, "radius": 180, "dmg": 15}},
@@ -43,12 +43,12 @@ health_packs = []
 # 血包配置：掉落概率、恢复血量、大小、颜色
 HEALTH_PACK_CONFIG = {
     "drop_chance": 0.03,  # 3%概率掉落
-    "heal_amount": 3,     # 恢复3点血
+    "heal_amount": 2,     # 恢复2点血
     "size": 20,           # 血包碰撞框大小
     "color": (255, 0, 0)  # 红色血包
 }
 
-# 怪物类型枚举：新增boss类型
+# 怪物类型枚举：
 MONSTER_TYPES = ["normal", "archer", "slime", "special", "boss"]
 
 # 史莱姆分裂配置：保持不变
@@ -76,7 +76,7 @@ class Player:
         self.weapon_timers = {wp: 0 for wp in BASE_WEAPON_CONFIG.keys()}
         # 受击无敌配置
         self.invincible = False
-        self.invincible_time = 1500  # 无敌1.5秒
+        self.invincible_time = 500  # 无敌0.5秒
         self.invincible_timer = 0
         self.flash_frequency = 100  # 闪烁间隔
         self.last_flash = 0
@@ -90,14 +90,34 @@ class Player:
         # 机器人护盾（新增）
         self.shield_hits = 0
         self.shield_active = False
+        # 移动方向记录（新增）
+        self.last_move_x = 0
+        self.last_move_y = 0        
 
     def move(self):
         k = pygame.key.get_pressed()
-        if k[pygame.K_a] and self.rect.x > 0: self.rect.x -= self.speed
-        if k[pygame.K_d] and self.rect.x < SW-32: self.rect.x += self.speed
-        if k[pygame.K_w] and self.rect.y > 0: self.rect.y -= self.speed
-        if k[pygame.K_s] and self.rect.y < SH-32: self.rect.y += self.speed
-
+        move_x = 0
+        move_y = 0
+        if k[pygame.K_a] and self.rect.x > 0: 
+            move_x -= self.speed
+        if k[pygame.K_d] and self.rect.x < SW-32: 
+            move_x += self.speed
+        if k[pygame.K_w] and self.rect.y > 0: 
+            move_y -= self.speed
+        if k[pygame.K_s] and self.rect.y < SH-32: 
+            move_y += self.speed
+    
+        # 更新位置
+        self.rect.x += move_x
+        self.rect.y += move_y
+    
+        # 更新移动方向
+        if move_x != 0 or move_y != 0:
+            # 归一化移动向量
+            magnitude = (move_x**2 + move_y**2)**0.5
+            if magnitude > 0:
+                self.last_move_x = move_x / magnitude
+                self.last_move_y = move_y / magnitude
     def get_weapon_dmg(self, weapon_name):
         lvl = self.unlocked_weapons.get(weapon_name, 0)
         cfg = BASE_WEAPON_CONFIG[weapon_name]
@@ -318,7 +338,6 @@ class Enemy:
         self.hp = max(1, int(self.base_hp))
         self.rect = pygame.Rect(x, y, self.size, self.size)
 
-    # 原有方法保持不变，新增BOSS射击逻辑
     def move_to(self, p):
         dx = p.rect.centerx - self.rect.centerx
         dy = p.rect.centery - self.rect.centery
@@ -332,7 +351,7 @@ class Enemy:
             self.rect.x -= dx / d * self.speed
             self.rect.y -= dy / d * self.speed
 
-    # 重写shoot，增加BOSS射击逻辑
+    # 重写shoot，增加BOSS射击逻辑，增加射击预判
     def shoot(self, p, monster_bullets, dt):
         if self.type != "archer" and not self.is_boss:
             return
@@ -348,6 +367,24 @@ class Enemy:
         dx, dy = px - tx, py - ty
         d = (dx**2 + dy**2)**0.5 + 0.01
         dx, dy = dx/d, dy/d
+        
+        # 对于 archer 类型，添加预判
+        if self.type == "archer":
+            # 计算距离和预判偏移
+            distance = d
+            # 根据距离和玩家移动方向计算预判偏移
+            # 偏移量与距离成正比，与玩家移动速度相关
+            lead_factor = distance * 0.1  # 调整这个值来控制预判程度
+            lead_x = p.last_move_x * lead_factor
+            lead_y = p.last_move_y * lead_factor
+            # 应用预判偏移
+            px += lead_x
+            py += lead_y
+            # 重新计算方向向量
+            dx, dy = px - tx, py - ty
+            d = (dx**2 + dy**2)**0.5 + 0.01
+            dx, dy = dx/d, dy/d
+        
         # BOSS发射3颗散射子弹，伤害更高
         if self.is_boss:
             for off in [-0.1, 0, 0.1]:
@@ -355,25 +392,24 @@ class Enemy:
                 monster_bullets.append(["boss", tx, ty, c.x*9, c.y*9, 2])  # BOSS子弹伤害2点
         else:
             monster_bullets.append(["archer", tx, ty, dx*7, dy*7, 1])
-
-    # 原有方法保持不变
-    def split_slime(self):
-        slime_cfg = SLIME_SIZE[self.slime_grade]
-        if slime_cfg["split_to"] is None:
-            return []
-        new_slimes = []
-        for i in [-1, 1]:
-            offset_x = random.randint(20, 40) * i
-            offset_y = random.randint(20, 40) * i
-            new_slime = Enemy("slime", self.wave)
-            new_slime.slime_grade = slime_cfg["split_to"]
-            slime_new_cfg = SLIME_SIZE[new_slime.slime_grade]
-            new_slime.size = slime_new_cfg["size"]
-            new_slime.hp = max(1, int(slime_new_cfg["hp"] + self.hp_grow))
-            new_slime.speed = slime_new_cfg["speed"]
-            new_slime.rect = pygame.Rect(self.rect.x + offset_x, self.rect.y + offset_y, new_slime.size, new_slime.size)
-            new_slimes.append(new_slime)
-        return new_slimes
+        # 原有方法保持不变
+        def split_slime(self):
+            slime_cfg = SLIME_SIZE[self.slime_grade]
+            if slime_cfg["split_to"] is None:
+                return []
+            new_slimes = []
+            for i in [-1, 1]:
+                offset_x = random.randint(20, 40) * i
+                offset_y = random.randint(20, 40) * i
+                new_slime = Enemy("slime", self.wave)
+                new_slime.slime_grade = slime_cfg["split_to"]
+                slime_new_cfg = SLIME_SIZE[new_slime.slime_grade]
+                new_slime.size = slime_new_cfg["size"]
+                new_slime.hp = max(1, int(slime_new_cfg["hp"] + self.hp_grow))
+                new_slime.speed = slime_new_cfg["speed"]
+                new_slime.rect = pygame.Rect(self.rect.x + offset_x, self.rect.y + offset_y, new_slime.size, new_slime.size)
+                new_slimes.append(new_slime)
+            return new_slimes
 
 # 重写wave_spawn，每5波生成BOSS
 def wave_spawn(n, wave):
