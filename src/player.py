@@ -26,6 +26,10 @@ class Player:
         self.unlocked_weapons = {list(BASE_WEAPON_CONFIG.keys())[0]: 1}
         self.weapon_timers = {wp: 0 for wp in BASE_WEAPON_CONFIG.keys()}
         
+        # 鼠标状态跟踪
+        self.mouse_pressed_last_frame = False
+        self.last_pistol_shot = 0  # 用于限制按住鼠标时的射速
+        
         # 受击无敌配置
         self.invincible = False
         self.invincible_time = 1500  # 无敌1.5秒
@@ -237,14 +241,33 @@ class Player:
             total_dmg = self.base_damage + weapon_dmg
             
             if weapon_name == "普通手枪":
-                if mouse_clicked and current_time - self.last_shot > 100:
+                # 获取当前鼠标状态
+                mouse_pressed = pygame.mouse.get_pressed()[0]  # 获取鼠标左键状态
+                
+                # 检测鼠标是否刚被按下（从释放变为按下）
+                mouse_just_pressed = mouse_pressed and not self.mouse_pressed_last_frame
+                
+                # 更新鼠标状态
+                self.mouse_pressed_last_frame = mouse_pressed
+                
+                # 单击模式：鼠标刚按下且不在冷却期内
+                if mouse_just_pressed and current_time - self.last_shot > 50:  # 单击模式：更快的射速（每0.05秒）
                     mx, my = pygame.mouse.get_pos()
                     px, py = self.rect.center
                     dx, dy = mx - px, my - py
                     d = (dx**2 + dy**2)**0.5 + 0.01
                     dx, dy = dx/d, dy/d
                     bullets.append(["pistol", px, py, dx*10, dy*10, total_dmg, 0])
-                    self.last_shot = current_timedd
+                    self.last_shot = current_time
+                # 按住模式：鼠标持续按下但不在单击冷却期内
+                elif mouse_pressed and not mouse_just_pressed and current_time - self.last_shot > 500:  # 按住模式：限制射速（每0.5秒）
+                    mx, my = pygame.mouse.get_pos()
+                    px, py = self.rect.center
+                    dx, dy = mx - px, my - py
+                    d = (dx**2 + dy**2)**0.5 + 0.01
+                    dx, dy = dx/d, dy/d
+                    bullets.append(["pistol", px, py, dx*10, dy*10, total_dmg, 0])
+                    self.last_shot = current_time
                 self.weapon_timers[weapon_name] = 0
                 continue
             
