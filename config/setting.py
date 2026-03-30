@@ -23,13 +23,19 @@ COLORS = {
 
 # 字体设置
 try:
-    FONT = pygame.font.SysFont("Microsoft YaHei", 32)
-    BIG_FONT = pygame.font.SysFont("Microsoft YaHei", 48)
-    SMALL_FONT = pygame.font.SysFont("Microsoft YaHei", 24)
-except:
-    FONT = pygame.font.SysFont(None, 32)
-    BIG_FONT = pygame.font.SysFont(None, 48)
-    SMALL_FONT = pygame.font.SysFont(None, 24)
+    FONT = pygame.font.Font("assets/fonts/MSYH.TTC", 32)
+    BIG_FONT = pygame.font.Font("assets/fonts/MSYH.TTC", 48)
+    SMALL_FONT = pygame.font.Font("assets/fonts/MSYH.TTC", 24)
+except FileNotFoundError:
+    # 如果字体文件不存在，则尝试使用系统字体
+    try:
+        FONT = pygame.font.SysFont("Microsoft YaHei", 32)
+        BIG_FONT = pygame.font.SysFont("Microsoft YaHei", 48)
+        SMALL_FONT = pygame.font.SysFont("Microsoft YaHei", 24)
+    except:
+        FONT = pygame.font.SysFont(None, 32)
+        BIG_FONT = pygame.font.SysFont(None, 48)
+        SMALL_FONT = pygame.font.SysFont(None, 24)
 
 # 游戏常量
 SURVIVE_GOAL = 10 * 60 * 1000  # 10分钟

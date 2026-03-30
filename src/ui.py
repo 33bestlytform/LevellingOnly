@@ -14,7 +14,8 @@ def draw_text(screen, text, x, y, color=(255, 255, 255), font=None):
     if font:
         surf = font.render(text, True, color)
     else:
-        surf = pygame.font.SysFont("Microsoft YaHei", 32).render(text, True, color)
+        from config.setting import FONT  # 导入预设字体
+        surf = FONT.render(text, True, color)
     screen.blit(surf, (x, y))
 
 def draw_big(screen, text, x, y, color=(255, 220, 0)):
@@ -26,8 +27,8 @@ def draw_big(screen, text, x, y, color=(255, 220, 0)):
     :param y: y坐标
     :param color: 文本颜色
     """
-    font = pygame.font.SysFont("Microsoft YaHei", 48)
-    surf = font.render(text, True, color)
+    from config.setting import BIG_FONT  # 导入预设字体
+    surf = BIG_FONT.render(text, True, color)
     screen.blit(surf, (x, y))
 
 def draw_small(screen, text, x, y, color=(255, 255, 255)):
@@ -39,8 +40,8 @@ def draw_small(screen, text, x, y, color=(255, 255, 255)):
     :param y: y坐标
     :param color: 文本颜色
     """
-    font = pygame.font.SysFont("Microsoft YaHei", 24)
-    surf = font.render(text, True, color)
+    from config.setting import SMALL_FONT  # 导入预设字体
+    surf = SMALL_FONT.render(text, True, color)
     screen.blit(surf, (x, y))
 
 def draw_weapon_drop(screen, weapon_drop_rect, dropped_weapon, font):
