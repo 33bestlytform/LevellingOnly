@@ -22,20 +22,38 @@ COLORS = {
 }
 
 # 字体设置
-try:
-    FONT = pygame.font.Font("assets/fonts/MSYH.TTC", 32)
-    BIG_FONT = pygame.font.Font("assets/fonts/MSYH.TTC", 48)
-    SMALL_FONT = pygame.font.Font("assets/fonts/MSYH.TTC", 24)
-except FileNotFoundError:
-    # 如果字体文件不存在，则尝试使用系统字体
+def load_font():
+    """安全加载字体函数"""
+    font_paths = [
+        "assets/fonts/MSYH.TTC",
+        "assets/fonts/MSYHBD.TTC",
+        "assets/fonts/MSYHL.TTC",
+        "C:/Windows/Fonts/msyh.ttc",  # Windows系统字体路径
+        "C:/Windows/Fonts/msyhbd.ttc",
+        "C:/Windows/Fonts/msyhl.ttc"
+    ]
+    
+    # 首先尝试加载本地字体文件
+    for font_path in font_paths:
+        try:
+            return pygame.font.Font(font_path, 32), \
+                   pygame.font.Font(font_path, 48), \
+                   pygame.font.Font(font_path, 24)
+        except (FileNotFoundError, OSError):
+            continue
+    
+    # 如果本地字体都失败，尝试系统字体
     try:
-        FONT = pygame.font.SysFont("Microsoft YaHei", 32)
-        BIG_FONT = pygame.font.SysFont("Microsoft YaHei", 48)
-        SMALL_FONT = pygame.font.SysFont("Microsoft YaHei", 24)
+        return pygame.font.SysFont("Microsoft YaHei", 32), \
+               pygame.font.SysFont("Microsoft YaHei", 48), \
+               pygame.font.SysFont("Microsoft YaHei", 24)
     except:
-        FONT = pygame.font.SysFont(None, 32)
-        BIG_FONT = pygame.font.SysFont(None, 48)
-        SMALL_FONT = pygame.font.SysFont(None, 24)
+        # 最后回退到默认字体
+        return pygame.font.SysFont(None, 32), \
+               pygame.font.SysFont(None, 48), \
+               pygame.font.SysFont(None, 24)
+
+FONT, BIG_FONT, SMALL_FONT = load_font()
 
 # 游戏常量
 SURVIVE_GOAL = 10 * 60 * 1000  # 10分钟
