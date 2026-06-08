@@ -8,10 +8,11 @@ BASE_WEAPON_CONFIG = {
         "atk_speed": 0.25
     },
     "霰弹枪": {
-        "base_dmg": 3,
+        "base_dmg": 2,
         "upgrade": 2,
         "max_level": 8,
-        "atk_speed": 1.2
+        "atk_speed": 1.2,
+        "pellets": 3  # 初始弹丸数量
     },
     "激光枪": {
         "base_dmg": 5,

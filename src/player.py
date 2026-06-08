@@ -1,5 +1,4 @@
 # src/player.py
-# src/player.py
 import pygame
 from config.setting import SCREEN_WIDTH, SCREEN_HEIGHT
 from config.weapons import BASE_WEAPON_CONFIG
@@ -25,6 +24,7 @@ class Player:
         # 武器核心（使用基础配置初始化）
         self.unlocked_weapons = {list(BASE_WEAPON_CONFIG.keys())[0]: 1}
         self.weapon_timers = {wp: 0 for wp in BASE_WEAPON_CONFIG.keys()}
+        self.shotgun_pellets = BASE_WEAPON_CONFIG["霰弹枪"].get("pellets", 3)
         
         # 鼠标状态跟踪
         self.mouse_pressed_last_frame = False
@@ -171,7 +171,11 @@ class Player:
         # 更新技能状态
         if self.ultimate_active:
             self.ultimate_timer -= dt
-            
+
+            # 机器人护盾耗尽提前结束
+            if self.ultimate["type"] == "shield" and self.ultimate_timer > 0 and self.shield_hits <= 0:
+                self.ultimate_timer = 0
+
             # 战士AOE伤害（仅对小怪生效）
             if self.ultimate["type"] == "aoe" and self.ultimate_timer > 0:
                 px, py = self.rect.center
@@ -193,6 +197,10 @@ class Player:
                 # 忍者取消无敌（避免与原有无敌冲突）
                 elif self.ultimate["type"] == "invincible" and self.invincible:
                     self.invincible_timer = pygame.time.get_ticks() - self.invincible_time  # 强制结束无敌
+
+                # 机器人护盾清理
+                elif self.ultimate["type"] == "shield":
+                    self.shield_active = False
 
     def cast_ultimate(self):
         """
@@ -286,7 +294,9 @@ class Player:
             dx, dy = dx/d, dy/d
             
             if weapon_name == "霰弹枪":
-                for off in [-0.2, -0.1, 0, 0.1, 0.2]:
+                pellets = cfg.get("pellets", 3)
+                for i in range(pellets):
+                    off = (i - (pellets - 1) / 2) * 0.1
                     c = pygame.math.Vector2(dx, dy).rotate(off * 80)
                     bullets.append(["shotgun", px, py, c.x*8, c.y*8, total_dmg//2 + 1, 0])
             elif weapon_name == "激光枪":

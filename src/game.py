@@ -1,15 +1,19 @@
 # src/game.py
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pygame
 import random
-import os
 from config.setting import SCREEN_WIDTH, SCREEN_HEIGHT, COLORS, FONT, BIG_FONT, SMALL_FONT
 from src.player import Player
 from src.enemy import Enemy
 from src.ui import draw_text, draw_big, draw_small, draw_weapon_drop, draw_boss_hp, draw_ultimate_ui, draw_health_packs
-from config.characters import CHARACTERS
+from config.characters import CHARACTERS, render_ultimate_effect
 from config.weapons import BASE_WEAPON_CONFIG
 from config.enemies import wave_spawn
 from utils.logger import Logger
+from src.ability import generate_upgrades, apply_upgrade
 
 class Game:
     def __init__(self):
@@ -176,15 +180,15 @@ class Game:
                         # 升级页面按键逻辑
                         if p.upgrade_wait:
                             if event.key == pygame.K_1 and len(upgrades) >= 1:
-                                upgrades[0][1](p)
+                                apply_upgrade(p, upgrades[0])
                                 p.upgrade_wait = False
                                 enemies = wave_spawn(6 + wave * 2, wave)
                             if event.key == pygame.K_2 and len(upgrades) >= 2:
-                                upgrades[1][1](p)
+                                apply_upgrade(p, upgrades[1])
                                 p.upgrade_wait = False
-                                enemies = wave_spawn(6 + wave * 2, wave)
+                                enemies = wave_spawn(6 + wave * 2, wave)                           
                             if event.key == pygame.K_3 and len(upgrades) >= 3:
-                                upgrades[2][1](p)
+                                apply_upgrade(p, upgrades[2])
                                 p.upgrade_wait = False
                                 enemies = wave_spawn(6 + wave * 2, wave)
                         else:
@@ -342,7 +346,7 @@ class Game:
                     # 清完敌人升级逻辑
                     if not enemies:
                         wave += 1
-                        upgrades = self.generate_upgrades()
+                        upgrades = generate_upgrades(p)
                         p.upgrade_wait = True
                         self.weapon_drop_rect = None
                         self.dropped_weapon = None
@@ -352,12 +356,9 @@ class Game:
                 if not p.invincible or (pygame.time.get_ticks() - p.last_flash) < p.flash_frequency // 2:
                     pygame.draw.rect(self.screen, COLORS["GREEN"], p.rect)
                 
-                # 战士AOE光圈特效
-                if p.ultimate_active and p.ultimate["type"] == "aoe":
-                    px, py = p.rect.center
-                    radius = p.ultimate["radius"] - (p.ultimate_timer / p.ultimate["duration"]) * 50
-                    pygame.draw.circle(self.screen, (255, 100, 0), (int(px), int(py)), int(radius), 3)
-                
+                # 终极技能特效
+                render_ultimate_effect(self.screen, p)
+
                 # 2. 绘制敌人
                 for e in enemies:
                     pygame.draw.ellipse(self.screen, e.color, e.rect)
@@ -428,8 +429,8 @@ class Game:
                 if p.upgrade_wait:
                     pygame.draw.rect(self.screen, (40, 20, 40), (SCREEN_WIDTH//2 - 200, SCREEN_HEIGHT//2 - 100, 400, 300))
                     draw_big(self.screen, "选择升级！", SCREEN_WIDTH//2 - 80, SCREEN_HEIGHT//2 - 80, (255, 220, 0))
-                    for i, (name, _) in enumerate(upgrades):
-                        draw_text(self.screen, f"{i+1}. {name}", SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 + 20 + i*40, (255, 200, 100), FONT)
+                    for i, upgrade in enumerate(upgrades):
+                        draw_text(self.screen, f"{i+1}. {upgrade['name']}", SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 + 20 + i*40, (255, 200, 100), FONT)
                 
                 # 11. 提示文字
                 now_tick = pygame.time.get_ticks()
@@ -530,16 +531,3 @@ class Game:
             
             pygame.display.flip()
             self.clock.tick(60)
-    
-    def generate_upgrades(self):
-        """
-        生成升级选项
-        :return: 升级选项列表
-        """
-        pool = [
-            ("生命+3", lambda p: setattr(p, 'max_hp', p.max_hp+3) or setattr(p, 'hp', p.hp+3)),
-            ("基础伤害+1", lambda p: setattr(p, 'base_damage', p.base_damage+1)),
-            ("全武器攻速+", lambda p: [BASE_WEAPON_CONFIG[wp].update({'atk_speed': max(0.15, BASE_WEAPON_CONFIG[wp]['atk_speed']*0.97)}) for wp in BASE_WEAPON_CONFIG.keys()]),
-            ("移速+1", lambda p: setattr(p, 'speed', min(p.speed + 1, 10))),
-        ]
-        return random.sample(pool, 3)
