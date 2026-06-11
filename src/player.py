@@ -1,5 +1,6 @@
 # src/player.py
 import pygame
+import random
 from config.setting import SCREEN_WIDTH, SCREEN_HEIGHT
 from config.weapons import BASE_WEAPON_CONFIG
 
@@ -24,7 +25,7 @@ class Player:
         # 武器核心（使用基础配置初始化）
         self.unlocked_weapons = {list(BASE_WEAPON_CONFIG.keys())[0]: 1}
         self.weapon_timers = {wp: 0 for wp in BASE_WEAPON_CONFIG.keys()}
-        self.shotgun_pellets = BASE_WEAPON_CONFIG["霰弹枪"].get("pellets", 3)
+        self.shotgun_pellets = BASE_WEAPON_CONFIG["霰弹枪"].get("pellets", 4)
         
         # 鼠标状态跟踪
         self.mouse_pressed_last_frame = False
@@ -49,6 +50,21 @@ class Player:
         # 机器人护盾
         self.shield_hits = 0
         self.shield_active = False
+        
+        # 机器人激光枪连发
+        self.laser_burst_count = 0  # 激光枪连发次数加成
+        self.laser_burst_remaining = 0  # 当前连发剩余次数
+        self.laser_burst_timer = 0  # 连发间隔计时器
+        self.laser_burst_data = None  # [px, py, dx, dy, dmg]
+        
+        # 战士血怒
+        self.blood_rage = False
+        
+        # 射手无限活力
+        self.infinite_vitality = False
+        
+        # 忍者圣剑范围
+        self.sword_range_boost = False
         
         # 移动方向记录
         self.last_move_x = 0
@@ -219,7 +235,11 @@ class Player:
                 # 临时降低攻击间隔（攻速翻倍）
                 for wp in BASE_WEAPON_CONFIG.keys():
                     BASE_WEAPON_CONFIG[wp]["atk_speed"] *= self.ultimate["multiplier"]
-                return f"发动{self.ultimate['name']}！攻速翻倍！"
+                msg = f"发动{self.ultimate['name']}！攻速翻倍！"
+                if self.infinite_vitality and random.random() < 0.1:
+                    self.ultimate_cd = 0
+                    msg += " 无限活力！"
+                return msg
             elif self.ultimate["type"] == "invincible":
                 self.invincible = True
                 self.invincible_timer = pygame.time.get_ticks() + self.ultimate["duration"] * 1000
@@ -242,6 +262,15 @@ class Player:
         """
         current_time = pygame.time.get_ticks()
         self.update_invincible()
+        
+        # 激光枪连发处理
+        if self.laser_burst_remaining > 0:
+            self.laser_burst_timer -= dt
+            if self.laser_burst_timer <= 0:
+                px, py, dx, dy, dmg = self.laser_burst_data
+                bullets.append(["laser", px, py, dx*12, dy*12, dmg, 5])
+                self.laser_burst_remaining -= 1
+                self.laser_burst_timer = 0.1
         
         for weapon_name in self.unlocked_weapons:
             cfg = BASE_WEAPON_CONFIG[weapon_name]
@@ -294,16 +323,23 @@ class Player:
             dx, dy = dx/d, dy/d
             
             if weapon_name == "霰弹枪":
-                pellets = cfg.get("pellets", 3)
+                pellets = cfg.get("pellets", 4)
+                if self.blood_rage:
+                    pellets += (self.max_hp - self.hp) // 5
                 for i in range(pellets):
                     off = (i - (pellets - 1) / 2) * 0.1
                     c = pygame.math.Vector2(dx, dy).rotate(off * 80)
                     bullets.append(["shotgun", px, py, c.x*8, c.y*8, total_dmg//2 + 1, 0])
             elif weapon_name == "激光枪":
                 bullets.append(["laser", px, py, dx*12, dy*12, total_dmg, 5])
+                if self.laser_burst_count > 0 and self.laser_burst_remaining <= 0:
+                    self.laser_burst_remaining = self.laser_burst_count
+                    self.laser_burst_timer = 0.1
+                    self.laser_burst_data = [px, py, dx, dy, total_dmg]
             elif weapon_name == "圣剑":
+                sword_range = 375 if self.sword_range_boost else 150
                 for e in enemies:
                     dist = ((e.rect.centerx - px)**2 + (e.rect.centery - py)**2)**0.5
-                    if dist < 150:
+                    if dist < sword_range:
                         e.hp -= total_dmg
                         bullets.append(["sword", e.rect.centerx, e.rect.centery, 0, 0, 0, 15])

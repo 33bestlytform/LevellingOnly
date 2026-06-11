@@ -31,8 +31,28 @@ UPGRADE_POOL = [
     },
     {
         "name": "散弹枪弹丸数量+1",
-        "effect": lambda p: BASE_WEAPON_CONFIG["霰弹枪"].update({'pellets': min(8, BASE_WEAPON_CONFIG["霰弹枪"].get('pellets', 3) + 1)}),
-        "condition": lambda p: "霰弹枪" in p.unlocked_weapons and BASE_WEAPON_CONFIG["霰弹枪"].get('pellets', 3) < 12,
+        "effect": lambda p: BASE_WEAPON_CONFIG["霰弹枪"].update({'pellets': min(8, BASE_WEAPON_CONFIG["霰弹枪"].get('pellets', 4) + 1)}),
+        "condition": lambda p: "霰弹枪" in p.unlocked_weapons and BASE_WEAPON_CONFIG["霰弹枪"].get('pellets', 4) < 12,
+    },
+    {
+        "name": "激光枪连发次数+1",
+        "effect": lambda p: setattr(p, 'laser_burst_count', p.laser_burst_count + 1),
+        "condition": lambda p: p.char_name == "机器人" and p.laser_burst_count < 3 and "激光枪" in p.unlocked_weapons,
+    },
+    {
+        "name": "血怒",
+        "effect": lambda p: setattr(p, 'blood_rage', True),
+        "condition": lambda p: p.char_name == "战士" and not p.blood_rage and "霰弹枪" in p.unlocked_weapons,
+    },
+    {
+        "name": "无限活力",
+        "effect": lambda p: setattr(p, 'infinite_vitality', True),
+        "condition": lambda p: p.char_name == "射手" and not p.infinite_vitality,
+    },
+    {
+        "name": "圣剑攻击距离+150%",
+        "effect": lambda p: setattr(p, 'sword_range_boost', True),
+        "condition": lambda p: p.char_name == "忍者" and not p.sword_range_boost and "圣剑" in p.unlocked_weapons,
     },
     # 在这里添加新的升级选项
     {

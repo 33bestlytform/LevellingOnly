@@ -3,7 +3,9 @@
 ; Non-commercial use only
 
 #define MyAppName "LevellingOnly"
-#define MyAppVersion "1.2"
+#define MyAppVersion "2.0"
+#define MyAppPublisher "My Company, Inc."
+#define MyAppURL "https://www.example.com/"
 #define MyAppExeName "main.exe"
 #define MyAppAssocName MyAppName + " File"
 #define MyAppAssocExt ".myp"
@@ -12,10 +14,14 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{7F435F47-7460-43CC-BFB0-90268D728F2A}
+AppId={{A0B13C46-5DB2-4FDD-8E47-6F52583837AE}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 ; "ArchitecturesAllowed=x64compatible" specifies that Setup cannot run
@@ -28,29 +34,28 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ChangesAssociations=yes
 DisableProgramGroupPage=yes
-; Uncomment the following line to run in non administrative install mode (install for current user only).
-;PrivilegesRequired=lowest
-OutputBaseFilename=LevellingOnly_Setup
+; Remove the following line to run in administrative install mode (install for all users).
+PrivilegesRequired=lowest
+OutputDir=LevellingOnly2.0
+OutputBaseFilename=LevellingOnly2.0
 SolidCompression=yes
-WizardStyle=modern dark
+WizardStyle=classic dynamic
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "dutch"; MessagesFile: "compiler:Languages\Dutch.isl"
+Name: "finnish"; MessagesFile: "compiler:Languages\Finnish.isl"
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
-Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
-Name: "korean"; MessagesFile: "compiler:Languages\Korean.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
-Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "E:\LevellingOnly\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\LevellingOnly\dist\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs
+Source: "E:\LevellingOnly\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Registry]
