@@ -260,7 +260,7 @@ class Game:
                     for e in enemies:
                         if e.is_boss:
                             boss = e
-                        e.move_to(p)
+                        e.move_to(p, enemies)
                         e.shoot(p, monster_bullets, dt)
                         if e.rect.colliderect(p.rect):
                             if p.take_damage() and p.hp <= 0:

@@ -3,6 +3,12 @@ import pygame
 import random
 from config.setting import SCREEN_WIDTH, SCREEN_HEIGHT, SLIME_SIZE
 
+# 群聚行为参数
+SEPARATION_RADIUS = 60    # 分离检测半径
+ALIGNMENT_RADIUS = 150    # 对齐检测半径
+SEPARATION_WEIGHT = 0.4   # 分离力度权重
+ALIGNMENT_WEIGHT = 0.25   # 对齐力度权重
+
 class Enemy:
     def __init__(self, monster_type, wave, is_special=False):
         self.type = monster_type
@@ -13,6 +19,9 @@ class Enemy:
         # BOSS专属标识
         self.is_boss = monster_type == "boss"
         self.boss_max_hp = 0  # BOSS最大血量（用于绘制血量条）
+        # 记录上一帧速度，用于对齐行为
+        self.vx = 0
+        self.vy = 0
         # 初始生成位置（BOSS体型更大，调整生成范围）
         if self.is_boss:
             side = random.choice([-100, SCREEN_WIDTH + 100])
@@ -71,13 +80,67 @@ class Enemy:
         self.hp = max(1, int(self.base_hp))
         self.rect = pygame.Rect(x, y, self.size, self.size)
 
-    # 原有方法保持不变，新增BOSS射击逻辑
-    def move_to(self, p):
+    def move_to(self, p, enemies):
+        # 计算朝向玩家的基础方向
         dx = p.rect.centerx - self.rect.centerx
         dy = p.rect.centery - self.rect.centery
         d = (dx**2 + dy**2)**0.5 + 0.01
-        self.rect.x += dx / d * self.speed
-        self.rect.y += dy / d * self.speed
+        seek_x = dx / d
+        seek_y = dy / d
+
+        # 分离：远离附近敌人
+        sep_x, sep_y = 0, 0
+        sep_count = 0
+        for other in enemies:
+            if other is self:
+                continue
+            dist_x = self.rect.centerx - other.rect.centerx
+            dist_y = self.rect.centery - other.rect.centery
+            dist = (dist_x**2 + dist_y**2)**0.5 + 0.01
+            if dist < SEPARATION_RADIUS:
+                # 距离越近排斥力越大
+                force = (SEPARATION_RADIUS - dist) / SEPARATION_RADIUS
+                sep_x += (dist_x / dist) * force
+                sep_y += (dist_y / dist) * force
+                sep_count += 1
+
+        # 对齐：参考附近敌人的移动方向
+        align_x, align_y = 0, 0
+        align_count = 0
+        for other in enemies:
+            if other is self:
+                continue
+            dist_x = self.rect.centerx - other.rect.centerx
+            dist_y = self.rect.centery - other.rect.centery
+            dist = (dist_x**2 + dist_y**2)**0.5 + 0.01
+            if dist < ALIGNMENT_RADIUS:
+                align_x += other.vx
+                align_y += other.vy
+                align_count += 1
+
+        # 混合三种力：朝向玩家 + 分离 + 对齐
+        move_x = seek_x
+        move_y = seek_y
+
+        if sep_count > 0:
+            move_x += sep_x * SEPARATION_WEIGHT
+            move_y += sep_y * SEPARATION_WEIGHT
+
+        if align_count > 0:
+            avg_align_x = align_x / align_count
+            avg_align_y = align_y / align_count
+            move_x += avg_align_x * ALIGNMENT_WEIGHT
+            move_y += avg_align_y * ALIGNMENT_WEIGHT
+
+        # 归一化并应用速度
+        move_d = (move_x**2 + move_y**2)**0.5 + 0.01
+        self.vx = (move_x / move_d) * self.speed
+        self.vy = (move_y / move_d) * self.speed
+
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+
+        # 弓箭手保持距离逻辑
         if self.type == "archer":
             dist = ((p.rect.centerx - self.rect.centerx)**2 + (p.rect.centery - self.rect.centery)**2)**0.5
             if dist > 300:
