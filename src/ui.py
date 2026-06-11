@@ -64,10 +64,12 @@ def draw_boss_hp(screen, boss, font):
     :param boss: BOSS对象
     :param font: 字体
     """
+    from config.setting import SCREEN_WIDTH
+
     if boss:
         bar_width = 300
         bar_height = 20
-        x = 1000//2 - bar_width//2
+        x = SCREEN_WIDTH // 2 - bar_width // 2
         y = 20
         # 血量条背景
         pygame.draw.rect(screen, (100, 100, 100), (x-2, y-2, bar_width+4, bar_height+4))
@@ -84,19 +86,28 @@ def draw_ultimate_ui(screen, player, font):
     :param player: 玩家对象
     :param font: 字体
     """
+    from config.setting import SCREEN_WIDTH, SCREEN_HEIGHT
+
     cd_ratio = player.ultimate_cd / player.ultimate["cd"]
     cd_color = (0, 255, 0) if cd_ratio <= 0 else (255, 0, 0)
+
+    # 右下方对齐，距离边框保持 5px 间距
+    box_width = 100
+    box_height = 60
+    x = SCREEN_WIDTH - 5 - box_width
+    y = SCREEN_HEIGHT - 5 - box_height
+
     # 技能框背景
-    pygame.draw.rect(screen, (50, 50, 50), (1000-120, 700-80, 100, 60))
-    pygame.draw.rect(screen, cd_color, (1000-115, 700-75, 90, 50), 3)
+    pygame.draw.rect(screen, (50, 50, 50), (x, y, box_width, box_height))
+    pygame.draw.rect(screen, cd_color, (x + 5, y + 5, box_width - 10, box_height - 10), 3)
     # CD文字或技能名称
     if player.ultimate_cd > 0:
-        draw_text(screen, f"CD: {int(player.ultimate_cd)}s", 1000-105, 700-65, (255, 255, 255), font)
+        draw_text(screen, f"CD: {int(player.ultimate_cd)}s", x + 10, y + 15, (255, 255, 255), font)
     else:
-        draw_text(screen, f"Q: {player.ultimate['name']}", 1000-110, 700-65, (255, 255, 255), font)
+        draw_text(screen, f"Q: {player.ultimate['name']}", x + 5, y + 15, (255, 255, 255), font)
     # 机器人护盾剩余次数提示
     if player.shield_active:
-        draw_text(screen, f"护盾: {player.shield_hits}次", 1000-200, 700-40, (0, 255, 255), font)
+        draw_text(screen, f"护盾: {player.shield_hits}次", SCREEN_WIDTH - 5 - box_width - 80, SCREEN_HEIGHT - 5 - box_height + 20, (0, 255, 255), font)
 
 def draw_health_packs(screen, health_packs):
     """

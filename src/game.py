@@ -459,21 +459,37 @@ class Game:
         selected = 0
         while True:
             self.screen.fill(COLORS["BLACK"])
-            draw_big(self.screen, "我独自升级", SCREEN_WIDTH//2 - 100, 100, (255, 220, 0))
-            
+
+            # 标题居中
+            title_surf = BIG_FONT.render("我独自升级", True, (255, 220, 0))
+            title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 120))
+            self.screen.blit(title_surf, title_rect)
+
             for i, c in enumerate(CHARACTERS):
-                y = 200 + i * 60
+                y = 260 + i * 100
                 col = COLORS["GREEN"] if i == selected else (200, 200, 200)
-                draw_text(self.screen, f"{i+1}.{c['name']} | {c['desc']}", SCREEN_WIDTH//2 - 150, y, col, FONT)
-                # 显示终极技能名称
-                draw_text(self.screen, f"HP:{c['hp']} 移速:{c['speed']} 终极:{c['ultimate']['name']}", SCREEN_WIDTH//2 - 150, y+30, (180, 180, 180), SMALL_FONT)
-            
-            draw_text(self.screen, "1/2/3/4选择 ↑↓选择 回车确认", SCREEN_WIDTH//2 - 180, SCREEN_HEIGHT - 60, COLORS["WHITE"], FONT)
-            
+
+                # 角色名称和描述行
+                name_text = f"{i+1}.{c['name']} | {c['desc']}"
+                name_surf = FONT.render(name_text, True, col)
+                name_rect = name_surf.get_rect(center=(SCREEN_WIDTH // 2, y))
+                self.screen.blit(name_surf, name_rect)
+
+                # 角色属性行
+                attr_text = f"HP:{c['hp']}  移速:{c['speed']}  终极:{c['ultimate']['name']}"
+                attr_surf = SMALL_FONT.render(attr_text, True, (180, 180, 180))
+                attr_rect = attr_surf.get_rect(center=(SCREEN_WIDTH // 2, y + 35))
+                self.screen.blit(attr_surf, attr_rect)
+
+            # 操作提示居中
+            hint_surf = FONT.render("1/2/3/4选择  ↑↓选择  回车确认", True, COLORS["WHITE"])
+            hint_rect = hint_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 60))
+            self.screen.blit(hint_surf, hint_rect)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return None
-                
+
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_DOWN:
                         selected = (selected + 1) % 4
@@ -491,7 +507,7 @@ class Game:
                         selected = 3
                     elif event.key == pygame.K_RETURN:
                         return CHARACTERS[selected]
-            
+
             pygame.display.flip()
             self.clock.tick(60)
     
@@ -504,19 +520,30 @@ class Game:
         """
         while True:
             self.screen.fill(COLORS["BLACK"])
+
             if result == "win":
-                draw_big(self.screen, "挑战成功!", SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 - 80, (255, 220, 0))
+                result_surf = BIG_FONT.render("挑战成功!", True, (255, 220, 0))
             else:
-                draw_big(self.screen, "挑战失败", SCREEN_WIDTH//2 - 80, SCREEN_HEIGHT//2 - 80, (255, 220, 0))
-            
-            draw_text(self.screen, f"角色: {char_name}", SCREEN_WIDTH//2 - 50, SCREEN_HEIGHT//2, COLORS["WHITE"], FONT)
-            draw_text(self.screen, f"坚持到第 {wave} 波", SCREEN_WIDTH//2 - 70, SCREEN_HEIGHT//2 + 40, COLORS["WHITE"], FONT)
-            draw_text(self.screen, "按 ENTER 返回主页", SCREEN_WIDTH//2 - 110, SCREEN_HEIGHT//2 + 120, COLORS["WHITE"], FONT)
-            
+                result_surf = BIG_FONT.render("挑战失败", True, (255, 220, 0))
+            result_rect = result_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+            self.screen.blit(result_surf, result_rect)
+
+            char_surf = FONT.render(f"角色: {char_name}", True, COLORS["WHITE"])
+            char_rect = char_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+            self.screen.blit(char_surf, char_rect)
+
+            wave_surf = FONT.render(f"坚持到第 {wave} 波", True, COLORS["WHITE"])
+            wave_rect = wave_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50))
+            self.screen.blit(wave_surf, wave_rect)
+
+            hint_surf = FONT.render("按 ENTER 返回主页", True, COLORS["WHITE"])
+            hint_rect = hint_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 130))
+            self.screen.blit(hint_surf, hint_rect)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                
+
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     # 重置攻速配置
                     for wp in BASE_WEAPON_CONFIG.keys():
@@ -528,6 +555,6 @@ class Game:
                         }[wp]
                     pygame.time.delay(200)
                     return
-            
+
             pygame.display.flip()
             self.clock.tick(60)

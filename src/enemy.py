@@ -40,14 +40,14 @@ class Enemy:
         if self.type == "normal":
             self.size = 28
             self.base_hp = 1 + self.hp_grow
-            self.speed = random.uniform(1.2, 2.7)
+            self.speed = 5
             self.color = (220, 50, 50)
             self.drop_money = random.randint(1, 3) + self.wave // 5
             self.drop_weapon = None
         elif self.type == "archer":
             self.size = 26
             self.base_hp = 1 + self.hp_grow
-            self.speed = random.uniform(1.0, 2.0)
+            self.speed = 5
             self.color = (50, 100, 220)
             self.drop_money = random.randint(2, 4) + self.wave // 5
             self.drop_weapon = None
@@ -56,14 +56,14 @@ class Enemy:
             slime_cfg = SLIME_SIZE[self.slime_grade]
             self.size = slime_cfg["size"]
             self.base_hp = slime_cfg["hp"] + self.hp_grow
-            self.speed = slime_cfg["speed"]
+            self.speed = 5
             self.color = (50, 220, 100)
             self.drop_money = random.randint(3, 5) + self.wave // 5
             self.drop_weapon = None
         elif self.type == "special":
             self.size = 32
             self.base_hp = 3 + self.hp_grow * 1.2
-            self.speed = random.uniform(1.8, 2.5)
+            self.speed = 5
             self.color = (150, 0, 200)
             self.drop_money = random.randint(5, 10) + self.wave // 3
             self.drop_weapon = random.choice(list(["霰弹枪", "激光枪", "圣剑"])) if self.is_special else None
@@ -71,8 +71,8 @@ class Enemy:
         elif self.type == "boss":
             self.size = 80
             self.base_hp = 50 + self.hp_grow * 5  # BOSS血量是普通怪的5倍+
-            self.boss_max_hp = self.base_hp  # 记录最大血量
-            self.speed = random.uniform(0.8, 1.2)  # BOSS移速较慢
+            self.boss_max_hp = self.base_hp
+            self.speed = 5
             self.color = (255, 0, 100)  # 专属红色外观
             self.drop_money = random.randint(50, 100)  # 掉落大量金币
             self.drop_weapon = random.choice(list(["霰弹枪", "激光枪", "圣剑"])) if random.random() > 0.3 else None  # 高概率掉武器
